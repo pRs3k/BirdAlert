@@ -75,6 +75,9 @@ last_notified = {}
 
 
 def is_military_aircraft(hex_code):
+    # Remove the '~' character if it exists
+    hex_code = hex_code.lstrip('~')
+    
     # Convert the hex code to an integer
     hex_int = int(hex_code, 16)
 

@@ -34,3 +34,5 @@ Reboot the device
 - I'm not sure if the military and emergency flags are actually being set in the aircraft.json
 - Currently the default path for aicraft.json is `/run/readsb/aircraft.json` which contains the raw flight data. This data is then refined into `/run/adsbexchange-feed/aircraft.json` which is sent to ADSBx for feeding. It initially seems like the former is the better source of data for this script, but further investigation may be useful.
 - https://globe.adsbexchange.com/ is also able to provide other details like aircraft type, which would be nice to have in the notifications. Maybe if I figure out what they're using to pull that data, this tool could do the same.
+- Some military aircraft set their hexes outside of the designated hex range for military use only. For these cases, a database of known military hexes is useful.
+- Alas, some military aircraft will not broadcast at all and can only be seen with the naked eye.
