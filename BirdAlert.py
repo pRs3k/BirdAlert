@@ -349,6 +349,7 @@ def check_aircraft(aircraft):
                 'JAL',  # Japan Airlines
                 'JBU',  # JetBlue Airways
                 'JIA',  # PSA Airlines
+                'JRE',  # flyExclusive (Charter)
                 'JSX',  # JetSuiteX (Charter)
                 'JTL',  # Jet Linx Aviation (Charter)
                 'KAL',  # Korean Air
@@ -373,6 +374,7 @@ def check_aircraft(aircraft):
                 'TSC',  # Air Transat
                 'UAL',  # United Airlines
                 'UAE',  # Emirates
+                'UJC',  # Ultimate Jetcharters (Charter)
                 'UPS',  # United Parcel Service (Cargo)
                 'VIR',  # Virgin Atlantic
                 'VJA',  # Vista America (Charter)
