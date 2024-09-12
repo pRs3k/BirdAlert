@@ -315,7 +315,72 @@ def check_aircraft(aircraft):
         if skip_commercial == False:
             pass
         else:
-            if flight.startswith(('SWA', 'UAL', 'DAL', 'SKW', 'ASA', 'ATN', 'EJA', 'AAL', 'AFR', 'AIC', 'ANA', 'BAW', 'CPA', 'DLH', 'EIN', 'ETD', 'EZY', 'JAL', 'KLM', 'QFA', 'RYR', 'SIA', 'THA', 'UAE', 'VIR', 'FDX', 'FFT', 'CXK', 'AAY', 'LYM', 'CRE', 'JTL', 'ACA', 'EJM', 'UPS', 'MVJ')):
+            if flight.startswith((
+                'AAL',  # American Airlines
+                'AAY',  # Allegiant Air
+                'ACA',  # Air Canada
+                'AFR',  # Air France
+                'AIC',  # Air India
+                'ANA',  # All Nippon Airways
+                'ASA',  # Alaska Airlines
+                'ASH',  # Mesa Airlines
+                'ATN',  # Air Transport International (Cargo)
+                'AWI',  # Air Wisconsin
+                'BAW',  # British Airways
+                'BTA',  # Envoy Air (formerly American Eagle)
+                'CFG',  # Condor
+                'CHQ',  # Chautauqua Airlines
+                'CPA',  # Cathay Pacific
+                'CRE',  # Corporate Air (Cargo)
+                'CXK',  # Kalitta Charters (Cargo)
+                'DAL',  # Delta Air Lines
+                'DLH',  # Lufthansa
+                'EIN',  # Aer Lingus
+                'EJA',  # NetJets (Charter)
+                'EJM',  # Executive Jet Management (Charter)
+                'ENY',  # Envoy Air
+                'ETD',  # Etihad Airways
+                'EZY',  # easyJet
+                'FDX',  # FedEx (Cargo)
+                'FDY',  # Southern Airways Express
+                'FFT',  # Frontier Airlines
+                'GES',  # Gestair (Charter)
+                'GJS',  # GoJet Airlines
+                'JAL',  # Japan Airlines
+                'JBU',  # JetBlue Airways
+                'JIA',  # PSA Airlines
+                'JSX',  # JetSuiteX (Charter)
+                'JTL',  # Jet Linx Aviation (Charter)
+                'KAL',  # Korean Air
+                'KLM',  # KLM Royal Dutch Airlines
+                'LOF',  # Trans States Airlines
+                'LXJ',  # Flexjet (Charter)
+                'LYM',  # Key Lime Air (Cargo/Regional)
+                'MVJ',  # Marvel Air Services (Charter)
+                'MXY',  # Breeze Airways
+                'PDT',  # Piedmont Airlines
+                'QFA',  # Qantas
+                'QXE',  # Horizon Air
+                'RPA',  # Republic Airways
+                'RYR',  # Ryanair
+                'SAS',  # Scandinavian Airlines
+                'SCX',  # Sun Country Airlines (Charter)
+                'SIA',  # Singapore Airlines
+                'SKW',  # SkyWest Airlines
+                'SWA',  # Southwest Airlines
+                'SWQ',  # Swift Air (Charter)
+                'THA',  # Thai Airways
+                'TSC',  # Air Transat
+                'UAL',  # United Airlines
+                'UAE',  # Emirates
+                'UPS',  # United Parcel Service (Cargo)
+                'VIR',  # Virgin Atlantic
+                'VJA',  # Vista America (Charter)
+                'VOI',  # Volaris
+                'VRD',  # Virgin America (now merged with Alaska Airlines)
+                'WJA',  # WestJet
+                'XSR'   # Executive AirShare (Charter)
+            )):
                 print(f"Skipping aircraft hex {hex_code}: Commercial airline.\n\n")
                 return
 
