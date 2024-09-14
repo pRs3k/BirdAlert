@@ -29,14 +29,70 @@ transponder_types = [                              # Comment in/out rows corresp
     'tisb_other',                                  # Non-ADS-B target using a non-ICAO address
 ]
 
-watch_list = [                                     # Add the hex codes of specific aircraft to always alert on
-    'a2575b', #B-25J Mitchell "Yellow Rose"
-    'a082d8' #C-130 firefighting
-    'a69072' #DC-10 firefighting   
-    'a1a640' #UH-1 firefighting
-    'a4bf3d' #CH-47 firefighting
-    'a1a640' #UH-1 firefighting
-    'a270c6' #DC-3 firefighting
+hex_watch_list = {                                 # Add the hex codes of specific aircraft to always alert on
+    'a35e6b': "Elton John's Bombardier Global Express (M-EDZE)",
+    'a35e89': "Oprah Winfrey's Gulfstream G650 (N540W)",
+    'a3a8a7': "Elon Musk's Gulfstream V (N272BG)",
+    'a3a8c2': "George Lucas's Gulfstream V (N138GL)",
+    'a3b23a': "Michael Bloomberg's Dassault Falcon 900 (N8AG)",
+    'a3b29b': "Jim Carrey's Gulfstream V (N162JC)",
+    'a3b78d': "Judge Judy's Cessna Citation 750 (N555QB)",
+    'a3d53f': "Nike Corporation's Gulfstream G650 (N6453)",
+    'a3e31a': "Michael Bloomberg's Dassault Falcon 900 (N5MV)",
+    'a3e3d2': "Caesars Palace Casino's Gulfstream V (N898CE)",
+    'a4b69f': "Matt Damon's Bombardier Global 7500 (N444WT)",
+    'a4b7df': "Larry Ellison's Gulfstream G650 (N817GS)",
+    'a4bd79': "Mark Wahlberg's Bombardier Global Express (N143MW)",
+    'a44e47': "Michael Jordan's Gulfstream V (N236MJ)",
+    'a44e85': "Mark Zuckerberg's Gulfstream G650 (N68885)",
+    'a53afc': "Ronald Perelman's Gulfstream G650 (N838MF)",
+    'a54e98': "Travis Scott's Embraer E-190 (N713TS)",
+    'a59bfa': "Kid Rock's Bombardier Challenger 600 (N71KR)",
+    'a59f1b': "Tom Cruise's Bombardier Challenger 350 (N350XX)",
+    'a59525': "Dan Bilzerian's Gulfstream IV (N701DB)",
+    'a5958b': "Bill Gates' Cessna 208 Amphibian Caravan",
+    'a60e73': "Bill Gates's Gulfstream G650 (N887WM)",
+    'a60e84': "Bill Gates's Gulfstream G650 (N194WM)",
+    'a62742': "Eric Schmidt's Gulfstream G650 (N652WE)",
+    'a6758d': "Tyler Perry's Embraer E-190 (N378TP)",
+    'a68258': "Elon Musk's Gulfstream G650 (N628TS)",
+    'a69072': "DC-10 firefighting",
+    'a96f69': "John Travolta's Boeing 707-136B",
+    'a98bfa': "Kid Rock's Bombardier Challenger 600 (N71KR)",
+    'a1e4f2': "Phil Knight's Gulfstream G650 (N1KE)",
+    'a1b8ab': "Luke Bryan's Learjet 60 (N506AB)",
+    'a1f680': "Steve Ballmer's Gulfstream G650 (N709DS)",
+    'a2c818': "Sergey Brin's Gulfstream G650 (N232G)",
+    'a2cb4d': "Kylie Jenner's Bombardier Global 7500 (N810KJ)",
+    'a2e4cd': "Kim Kardashian's Gulfstream G650 (N1980K)",
+    'a2e77d': "David Geffen's Gulfstream G650 (N221DG)",
+    'a4b7df': "Larry Ellison's Gulfstream G650 (N817GS)",
+    'a47bf4': "Donald Trump's Boeing 757 (N757AF)",
+    'a48d23': "Lady Gaga's Gulfstream V (N474D)",
+    'a4bdb3': "Steve Wynn's Gulfstream V (N88WR)",
+    'a5e41b': "Bill Gates's Gulfstream G650 (N887WM)",
+    'a4bdb3': "Steve Wynn's Gulfstream V (N88WR)",
+    'a2cb4d': "Kylie Jenner's Bombardier Global 7500 (N810KJ)",
+    'a0b70e': "Google's Gulfstream V (N10XG)",
+    'a1e4f2': "Phil Knight's Gulfstream G650 (N1KE)",
+    'a53afc': "Ronald Perelman's Gulfstream G650 (N838MF)",
+    'a4bdb3': "Steve Wynn's Gulfstream V (N88WR)",
+    'a59bfa': "Kid Rock's Bombardier Challenger 600 (N71KR)",
+    'a4b69f': "Matt Damon's Bombardier Global 7500 (N444WT)",
+    'a3a8a7': "Elon Musk's Gulfstream V (N272BG)",
+    'a2cb4d': "Kylie Jenner's Bombardier Global 7500 (N810KJ)",
+    'ac39d6': "Bill Gates' Gulfstream G650ER",
+    'a17907': "Bill Gates' Gulfstream G650ER",
+    'a5958b': "Bill Gates' Cessna 208 Amphibian Caravan",
+    'ac64c6': "Taylor Swift's Dassault Falcon 900",
+    'a0f9e7': "Jim Carrey's Gulfstream V",
+    'a96f69': "John Travolta's Boeing 707-136B"
+}
+
+
+# List of callsigns to watch for
+callsign_watch_list = [
+    "CAP",                                         # Civil Air Patrol
 ]
 
 # Your location
@@ -136,50 +192,49 @@ def haversine(lat1, lon1, lat2, lon2):
 
 # Function to calculate the direction from your location to the aircraft
 def calculate_direction(lat1, lon1, lat2, lon2):
+    # Convert latitudes and longitudes to radians
+    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+
     dlon = lon2 - lon1
     y = sin(dlon) * cos(lat2)
     x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dlon)
+    
+    # Calculate the initial bearing in radians and convert to degrees
     initial_bearing = atan2(y, x)
     initial_bearing = degrees(initial_bearing)
+    
+    # Normalize the compass bearing to a range of 0 to 360 degrees
     compass_bearing = (initial_bearing + 360) % 360
 
+    # Determine the closest direction based on 45-degree intervals
     directions = ["North", "North-East", "East", "South-East", "South", "South-West", "West", "North-West"]
     idx = round(compass_bearing / 45) % 8
     return directions[idx]
 
 # Function to send an email notification
-def send_email_notification(aircraft_info, hex_code, distance, direction):
+def send_email_notification(message_body):
     subject = "Bird Alert!"
-    military_status = "Yes" if aircraft_info.get('military', False) or is_military_aircraft(hex_code) else "Unknown"
-    ground_speed = aircraft_info.get('gs', 'N/A')
-    emergency_status = aircraft_info.get('emergency', 'none')
-
-    message = f"Subject:{subject}\n\n" \
-              f"Aircraft hex: {hex_code}\n Distance: {distance:.2f}mi\n Direction: {direction}\n" \
-              f"Transponder: {aircraft_info.get('type', 'N/A')}\n Callsign: {aircraft_info.get('flight', 'N/A')}\n" \
-              f"Military: {military_status}\n Ground Speed: {ground_speed} knots\n" \
-              f"Emergency: {emergency_status}\n"
 
     try:
         with smtplib.SMTP(your_smtp_server, your_smtp_port) as server:
             server.starttls()
             server.login(your_email, your_email_app_password)
-            server.sendmail(your_email, your_email, message)
-            print(f"Sending Email: {message}\n")
+            server.sendmail(your_email, your_email, message_body)
+            print(f"Sending Email: {message_body}\n")
         return True
     except Exception as e:
         print(f"Failed to send email: {e}\n")
         return False
 
 # Function to send a Telegram notification
-def send_telegram_notification(message):
+def send_telegram_notification(message_body):
     if not telegram_bot_token or not telegram_chat_id:
         return False
     
     url = f"https://api.telegram.org/bot{telegram_bot_token}/sendMessage"
     payload = {
         "chat_id": telegram_chat_id,
-        "text": message
+        "text": message_body
     }
     
     try:
@@ -192,7 +247,7 @@ def send_telegram_notification(message):
         return False
 
 # Function to send a Pushover notification
-def send_pushover_notification(message):
+def send_pushover_notification(message_body):
     if not pushover_user_key or not pushover_app_token:
         return False
 
@@ -200,7 +255,7 @@ def send_pushover_notification(message):
     payload = {
         "token": pushover_app_token,
         "user": pushover_user_key,
-        "message": message
+        "message": message_body
     }
 
     try:
@@ -213,12 +268,12 @@ def send_pushover_notification(message):
         return False
 
 # Function to send a notification via IFTTT
-def send_ifttt_notification(message):
+def send_ifttt_notification(message_body):
     if not ifttt_webhook_event or not ifttt_webhook_key:
         return False
 
     url = f"https://maker.ifttt.com/trigger/{ifttt_webhook_event}/with/key/{ifttt_webhook_key}"
-    payload = {"value1": message}
+    payload = {"value1": message_body}
 
     try:
         response = requests.post(url, json=payload)
@@ -230,39 +285,44 @@ def send_ifttt_notification(message):
         return False
 
 # Function to send a Signal notification
-def send_signal_notification(message):
+def send_signal_notification(message_body):
     if not signal_phone_number or not signal_recipients:
         return False
 
     try:
         for recipient in signal_recipients:
             # Replace with actual Signal command or API call to send a message
-            print(f"Sending Signal message to {recipient}: {message}\n")
+            print(f"Sending Signal message to {recipient}: {message_body}\n")
         return True
     except Exception as e:
         print(f"Failed to send Signal message: {e}\n")
         return False
 
 # Function to send notifications through all available methods
-def send_notification(aircraft_info, hex_code, distance, direction):
-    message = f"Bird Alert!\n" \
-              f"Aircraft hex: {hex_code}\n Distance: {distance:.2f}mi\n Direction: {direction}\n" \
-              f"Transponder: {aircraft_info.get('type', 'N/A')}\n Callsign: {aircraft_info.get('flight', 'N/A')}\n" \
-              f"Military: {'Yes' if aircraft_info.get('military', False) or is_military_aircraft(hex_code) else 'Unknown'}\n" \
+def send_notification(aircraft_info, hex_code, distance, direction, aircraft_owner):
+    message_body = f"Bird Alert!\n" \
+              f"Aircraft hex: {hex_code}\n" \
+              f"Callsign: {aircraft_info.get('flight', 'N/A')}\n" \
+              f"Owner: {aircraft_owner}\n" \
+              f"Distance: {distance:.2f}mi\n" \
+              f"Direction: {direction}\n" \
               f"Ground Speed: {aircraft_info.get('gs', 'N/A')} knots\n" \
+              f"Transponder: {aircraft_info.get('type', 'N/A')}\n" \
+              f"Military: {'Yes' if aircraft_info.get('military', False) or is_military_aircraft(hex_code) else 'Unknown'}\n" \
               f"Emergency: {aircraft_info.get('emergency', 'none')}\n"
 
-    if send_email_notification(aircraft_info, hex_code, distance, direction):
+    if send_email_notification(message_body):
         return
-    if send_telegram_notification(message):
+    if send_telegram_notification(message_body):
         return
-    if send_pushover_notification(message):
+    if send_pushover_notification(message_body):
         return
-    if send_ifttt_notification(message):
+    if send_ifttt_notification(message_body):
         return
-    if send_signal_notification(message):
+    if send_signal_notification(message_body):
         return
     print("All notification methods failed")
+    exit()
 
 # Function to check if aircraft is within the defined range and/or flagged for special attention
 def check_aircraft(aircraft):
@@ -276,7 +336,8 @@ def check_aircraft(aircraft):
     global skip_commercial
     global transponder_types
     global min_alert_period
-    global watch_list
+    global hex_watch_list
+    aircraft_owner = "Unknown"
 
     # Calculate distance and direction only if lat and lon are available
     if lat is not None and lon is not None:
@@ -294,24 +355,35 @@ def check_aircraft(aircraft):
             return
 
         # 2. Check if the hex code matches the watch list
-        if hex_code in watch_list:
+        if hex_code in hex_watch_list:
+            aircraft_owner = hex_watch_list[hex_code]
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
-                send_notification(aircraft, hex_code, dist, direction)
+                send_notification(aircraft, hex_code, dist, direction, aircraft_owner)
                 last_notified[hex_code] = current_time
             else:
                 print(f"Skipping aircraft hex {hex_code}: Last alert sent {int((current_time - last_notified[hex_code]) / 60)} minutes ago.\n\n")
             return
+        
+        # 3. Check if the callsign matches the watch list
+        for callsign in callsign_watch_list:
+            if flight.startswith(callsign):
+                if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
+                    send_notification(aircraft, hex_code, dist, direction, aircraft_owner)
+                    last_notified[hex_code] = current_time
+                else:
+                    print(f"Skipping aircraft hex {hex_code}: Last alert sent {int((current_time - last_notified[hex_code]) / 60)} minutes ago.\n\n")
+                return
 
-        # 3. Check if the emergency flag is set
+        # 4. Check if the emergency flag is set
         if (include_emergency_check and emergency_flag != 'none'):
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
-                send_notification(aircraft, hex_code, dist, direction)
+                send_notification(aircraft, hex_code, dist, direction, aircraft_owner)
                 last_notified[hex_code] = current_time
             else:
                 print(f"Skipping aircraft hex {hex_code}: Last alert sent {int((current_time - last_notified[hex_code]) / 60)} minutes ago.\n\n")
             return
 
-        # 4. Check if the callsign belongs to a commercial airline
+        # 5. Check if the callsign belongs to a commercial airline
         if skip_commercial == False:
             pass
         else:
@@ -321,6 +393,7 @@ def check_aircraft(aircraft):
                 'ACA',  # Air Canada
                 'AFR',  # Air France
                 'AIC',  # Air India
+                'AMX',  # Aeromexico
                 'ANA',  # All Nippon Airways
                 'ASA',  # Alaska Airlines
                 'ASH',  # Mesa Airlines
@@ -346,12 +419,14 @@ def check_aircraft(aircraft):
                 'FFT',  # Frontier Airlines
                 'GES',  # Gestair (Charter)
                 'GJS',  # GoJet Airlines
+                'ICE',  # Icelandair
                 'JAL',  # Japan Airlines
                 'JBU',  # JetBlue Airways
                 'JIA',  # PSA Airlines
                 'JRE',  # flyExclusive (Charter)
                 'JSX',  # JetSuiteX (Charter)
                 'JTL',  # Jet Linx Aviation (Charter)
+                'JTZ',  # Nicholas Air (Charter)
                 'KAL',  # Korean Air
                 'KLM',  # KLM Royal Dutch Airlines
                 'LOF',  # Trans States Airlines
@@ -359,6 +434,7 @@ def check_aircraft(aircraft):
                 'LYM',  # Key Lime Air (Cargo/Regional)
                 'MVJ',  # Marvel Air Services (Charter)
                 'MXY',  # Breeze Airways
+                'NKS',  # Spirit Airlines
                 'PDT',  # Piedmont Airlines
                 'QFA',  # Qantas
                 'QXE',  # Horizon Air
@@ -372,6 +448,7 @@ def check_aircraft(aircraft):
                 'SWQ',  # Swift Air (Charter)
                 'THA',  # Thai Airways
                 'TSC',  # Air Transat
+                'TWY',  # Solairus Aviation (Charter)
                 'UAL',  # United Airlines
                 'UAE',  # Emirates
                 'UJC',  # Ultimate Jetcharters (Charter)
@@ -386,19 +463,19 @@ def check_aircraft(aircraft):
                 print(f"Skipping aircraft hex {hex_code}: Commercial airline.\n\n")
                 return
 
-        # 5. Check if the hex code or flag indicates military
+        # 6. Check if the hex code or flag indicates military
         if (include_military_check and (aircraft.get('military', False) or is_military_aircraft(hex_code))):
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
-                send_notification(aircraft, hex_code, dist, direction)
+                send_notification(aircraft, hex_code, dist, direction, aircraft_owner)
                 last_notified[hex_code] = current_time
             else:
                 print(f"Skipping aircraft hex {hex_code}: Last alert sent {int((current_time - last_notified[hex_code]) / 60)} minutes ago.\n\n")
             return
         
-        # 6. Check the transponder type
+        # 7. Check the transponder type
         if transponder_type in transponder_types:
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
-                send_notification(aircraft, hex_code, dist, direction)
+                send_notification(aircraft, hex_code, dist, direction, aircraft_owner)
                 last_notified[hex_code] = current_time
             else:
                 print(f"Skipping aircraft hex {hex_code}: Last alert sent {int((current_time - last_notified[hex_code]) / 60)} minutes ago.\n\n")
