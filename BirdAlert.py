@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import smtplib
 import json
 import time
@@ -11,6 +12,7 @@ from math import radians, cos, sin, asin, sqrt, atan2, degrees
 # Script behavior
 update_rate = 5                                    # The frequency that this script runs checking for aircraft updates, in seconds
 aircraft_json_path = "/run/readsb/aircraft.json"   # Change this if your aircraft.json is in a different location
+aircrafts_json_path = "~/aircrafts.json"           # This is referring to the Mictronics aircraft database. Leave this alone unless you have already downloaded it and would like to store it elsewhere.
 range_miles = 20                                   # Change this to the radius of the notification zone (in miles)
 min_alert_period = 600                             # Change this to the number of seconds to wait before alerting again for the same aircraft
 include_military_check = True                      # Change to False if you don't want to alert based on the military flag being set or the hex falling within the military range  (True will alert regardless of other settings)
@@ -56,7 +58,6 @@ hex_watch_list = {                                 # Add the hex codes of specif
     'a62742': "Eric Schmidt's Gulfstream G650 (N652WE)",
     'a6758d': "Tyler Perry's Embraer E-190 (N378TP)",
     'a68258': "Elon Musk's Gulfstream G650 (N628TS)",
-    'a69072': "DC-10 firefighting",
     'a96f69': "John Travolta's Boeing 707-136B",
     'a98bfa': "Kid Rock's Bombardier Challenger 600 (N71KR)",
     'a1e4f2': "Phil Knight's Gulfstream G650 (N1KE)",
@@ -129,6 +130,51 @@ signal_recipients = []  # change this to a list of recipients
 # Tracking last notification times
 last_notified = {}
 
+# Function to support downloading updated Mictronics aircraft database
+def download_file(url, path):
+    try:
+        file_response = requests.get(url)
+        if file_response.status_code == 200:
+            with open(path, 'wb') as f:
+                f.write(file_response.content)
+            print(f"{path} has been downloaded.\n")
+        else:
+            print(f"Failed to download the file. HTTP Status: {file_response.status_code}\n")
+    except Exception as e:
+        print(f"Error downloading file: {e}\n")
+
+# Function to check if there is a newer version of the Mictronics aircraft database and then download it
+def aircrafts_age_check():
+    url = 'https://raw.githubusercontent.com/Mictronics/readsb-protobuf/refs/heads/dev/webapp/src/db/aircrafts.json'
+    home_dir_check = os.path.expanduser(aircrafts_json_path)
+    time_check_file = '.time_check'
+
+    # Check if .time_check exists
+    is_new_time_check = False
+    if not os.path.exists(time_check_file):
+        is_new_time_check = True
+        open(time_check_file, 'a').close()  # Create the .time_check file
+
+    # Check if aircrafts.json exists
+    is_new_aircrafts_json = not os.path.exists(home_dir_check)
+
+    # Check the last modified time of the .time_check file
+    last_check_time = os.path.getmtime(time_check_file)
+    current_time = time.time()
+
+    # If .time_check is new or it's been more than an hour since the last check
+    if is_new_time_check or (current_time - last_check_time) > 3600:
+        if is_new_aircrafts_json:
+            print(f"{home_dir_check} not found. Downloading for the first time...\n")
+        else:
+            print("More than 1 hour since last check for updated Micronics database. Checking for updates...\n")
+        
+        # Download the latest aircrafts.json
+        download_file(url, home_dir_check)
+        # Update the .time_check file to the current time
+        os.utime(time_check_file, (current_time, current_time))
+    else:
+        print("Less than 1 hour since last check for updated Micronics database. Skipping...\n")
 
 def is_military_aircraft(hex_code):
     # Remove the '~' character if it exists
@@ -503,6 +549,7 @@ def run_script():
     while True:
         global update_rate
         start_time = time.time()
+        aircrafts_age_check()
         fetch_aircraft_data()
         elapsed_time = time.time() - start_time
         time.sleep(max(update_rate - elapsed_time, 0))

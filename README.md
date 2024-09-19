@@ -21,7 +21,7 @@ Reboot the device
 - [ ] Account for aircraft using TIS-B that may rapidly change their hex code (which begin with "~") leading to a flood of notifications
 - [ ] Add error handling for notification failures
 - [x] Allow for hex code specific notifications
-- [ ] Allow for callsign specific notifications
+- [x] Allow for callsign specific notifications
 - [ ] Clean up terminal output to be more compact
 - [x] ~~Add more commercial airline callsigns to the ignore list~~
 - [ ] Investigate if data could also be taken from https://globe.adsbexchange.com/ as a separate option, ex. using a browser plugin
