@@ -21,9 +21,9 @@ If using an operating system that supports crontab, enable the script to run on 
 `sudo crontab -e`<br><br>
 Add the following line to the bottom of your crontab file:<br>
 `@reboot /usr/bin/python3 <path to BirdAlert.py>`<br><br>
-Save and then reboot the device<br>
+Save, and then reboot the device<br>
 `sudo reboot now`<br><br>
-If you need to stop BirdAlert to modify the configuration values<br>
+If you need to stop BirdAlert or modify the configuration variables:<br>
 `ps aux | grep -i birdalert`<br>
 `kill <pid of BirdAlert.py, there will be 2 processes to kill>`<br>
 `nano BirdAlert.py`<br>

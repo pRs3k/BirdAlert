@@ -5,6 +5,7 @@ import smtplib
 import json
 import time
 import requests
+import subprocess
 from math import radians, cos, sin, asin, sqrt, atan2, degrees
 
 #############################################################
@@ -339,10 +340,21 @@ def send_signal_notification(message_body):
 
     try:
         for recipient in signal_recipients:
-            # Replace with actual Signal command or API call to send a message
-            print(f"Sending Signal message to {recipient}: {message_body}\n")
+            # Use subprocess to execute the Signal CLI command
+            command = [
+                "signal-cli",  # The Signal CLI command
+                "-u", signal_phone_number,  # The sender's phone number
+                "send",  # Action to send a message
+                "-m", message_body,  # The message content
+                recipient  # The recipient's phone number
+            ]
+
+            # Run the command and wait for it to complete
+            subprocess.run(command, check=True)
+
+            print(f"Signal message sent to {recipient}: {message_body}\n")
         return True
-    except Exception as e:
+    except subprocess.CalledProcessError as e:
         print(f"Failed to send Signal message: {e}\n")
         return False
 
@@ -381,15 +393,34 @@ def send_notification(aircraft_info, hex_code, distance, direction, aircraft_own
                     f"Military: {'Yes' if aircraft_info.get('military', False) or is_military_aircraft(hex_code) else 'Unknown'}\n" \
                     f"Emergency: {aircraft_info.get('emergency', 'none')}\n"
 
-    if send_email_notification(message_body):
+    if not your_email or not your_email_app_password or not your_smtp_server:
+        pass
+    else:
+        send_email_notification(message_body)
         return
-    if send_telegram_notification(message_body):
+    
+    if not telegram_bot_token or not telegram_chat_id:
+        pass
+    else:
+        send_telegram_notification(message_body)
         return
-    if send_pushover_notification(message_body):
+
+    if not ifttt_webhook_event or not ifttt_webhook_key:
+        pass
+    else:
+        send_ifttt_notification(message_body)
         return
-    if send_ifttt_notification(message_body):
+
+    if not signal_phone_number or not signal_recipients:
+        pass
+    else:
+        send_signal_notification(message_body)
         return
-    if send_signal_notification(message_body):
+
+    if not pushover_user_key or not pushover_app_token:
+        pass
+    else:
+        send_pushover_notification(message_body)
         return
     print("All notification methods failed")
     exit()
