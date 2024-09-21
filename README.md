@@ -10,12 +10,24 @@ BirdAlert is an aircraft reporting tool for ADSBx receivers that sends notificat
 - Monitors for Civil Air Patrol (CAP) aircraft callsigns by default
 
 ## Setup
-Copy BirdAlert.py to your ADSBx receiver and modify it to set the variables.<br><br>
+
+To get notifications using Telegram (my personal choice), search "how to set up botfather, get token and chatid", or follow the steps here https://www.cytron.io/tutorial/how-to-create-a-telegram-bot-get-the-api-key-and-chat-id<br><br>
+
+Copy BirdAlert.py to your ADSBx receiver and modify it to set the variables:<br>
+`cd ~`
+`curl https://raw.githubusercontent.com/pRs3k/BirdAlert/refs/heads/main/BirdAlert.py`
+`nano BirdAlert.py`<br><br>
 If using an operating system that supports crontab, enable the script to run on boot:<br>
 `sudo crontab -e`<br><br>
-Add the following line to the bottom of your crontab: <br>
+Add the following line to the bottom of your crontab:<br>
 `@reboot /usr/bin/python3 <path to BirdAlert.py>`<br><br>
-Reboot the device
+Reboot the device<br>
+`sudo reboot now`
+If you need to stop BirdAlert to modify the configuration values<br>
+`ps aux | grep -i birdalert`
+`kill <pid of BirdAlert.py, there will be 2 processes to kill>`
+`nano BirdAlert.py`
+`sudo reboot now`
 
 ## Future Enhancements
 - [ ] Allow for notifications using email-to-SMS

@@ -19,8 +19,8 @@ include_military_check = True                    # Change to False if you don't 
 include_emergency_check = True                   # Change to False if you don't want to alert based on the emergency flag being set (True will alert regardless of other settings)
 skip_commercial = True                           # Change to False to include alerts for commerical aircraft (doesn't effect notificaitons for emergency flag being set)
 transponder_types = [                            # Comment in/out rows corresponding to transponder types you want to receive alerts for
-    'adsb_icao',     # Mode S or ADS-B transponder
- #   'adsb_icao_nt',  # ADS-B equipped “non-transponder” emitter, such as a ground vehicle
+    'adsb_icao',     # Mode S or ADS-B transponder (I usually comment this out to prevent too many notifications of non-interesting aircraft)
+ #   'adsb_icao_nt',  # ADS-B equipped “non-transponder” emitter, such as a ground vehicle (this is an example of a transponder commented out)
     'adsr_icao',     # Rebroadcast of ADS-B messages originally sent via UAT transponder
     'tisb_icao',     # Non-ADS-B aircraft
     'adsc',          # Automatic Dependent Surveillance-Contract received by monitoring satellite downlinks
@@ -90,15 +90,14 @@ hex_watch_list = {   # Add the hex codes of specific aircraft to always alert on
     'a96f69': "John Travolta's Boeing 707-136B"
 }
 
-
 # List of callsigns to watch for
 callsign_watch_list = [
     "CAP",                                         # Civil Air Patrol
 ]
 
 # Your location
-your_lat = latitude_here  # change this to the latitude of the notification zone
-your_lon = longitude_here  # change this to the longitude of the notification zone
+your_lat = latitude_here  # change this to the latitude of the notification zone (ex. 40.12345)
+your_lon = longitude_here  # change this to the longitude of the notification zone (ex -104.12345)
 
 # Choose as many of the following notification methods as you like (it's not necessary to comment them out if you don't use them).
 # The script will try them in order and stop after the first successful notification is sent.
