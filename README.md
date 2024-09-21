@@ -15,7 +15,7 @@ To get notifications using Telegram (my personal preference), search "how to set
 
 Copy BirdAlert.py to your ADS-B receiver and modify it to set the variables:<br>
 `cd ~`<br>
-`curl https://raw.githubusercontent.com/pRs3k/BirdAlert/refs/heads/main/BirdAlert.py`<br>
+`wget https://raw.githubusercontent.com/pRs3k/BirdAlert/refs/heads/main/BirdAlert.py`<br>
 `nano BirdAlert.py`<br><br>
 If using an operating system that supports crontab, enable the script to run on boot:<br>
 `sudo crontab -e`<br><br>
