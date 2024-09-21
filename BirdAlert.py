@@ -7,31 +7,31 @@ import time
 import requests
 from math import radians, cos, sin, asin, sqrt, atan2, degrees
 
-#################################################################################
+#############################################################
 
 # Script behavior
-update_rate = 5                                    # The frequency that this script runs checking for aircraft updates, in seconds
-aircraft_json_path = "/run/readsb/aircraft.json"   # Change this if your aircraft.json is in a different location
-aircrafts_json_path = "~/aircrafts.json"           # This is referring to the Mictronics aircraft database. Leave this alone unless you have already downloaded it and would like to store it elsewhere.
-range_miles = 20                                   # Change this to the radius of the notification zone (in miles)
-min_alert_period = 600                             # Change this to the number of seconds to wait before alerting again for the same aircraft
-include_military_check = True                      # Change to False if you don't want to alert based on the military flag being set or the hex falling within the military range  (True will alert regardless of other settings)
-include_emergency_check = True                     # Change to False if you don't want to alert based on the emergency flag being set (True will alert regardless of other settings)
-skip_commercial = True                             # Change to False to include alerts for commerical aircraft (doesn't effect notificaitons for emergency flag being set)
-transponder_types = [                              # Comment in/out rows corresponding to transponder types you want to receive alerts for
-    'adsb_icao',                                   # Mode S or ADS-B transponder
-#    'adsb_icao_nt',                                # ADS-B equipped “non-transponder” emitter, such as a ground vehicle
-    'adsr_icao',                                   # Rebroadcast of ADS-B messages originally sent via UAT transponder
-    'tisb_icao',                                   # Non-ADS-B aircraft
-    'adsc',                                        # Automatic Dependent Surveillance-Contract received by monitoring satellite downlinks
-    'mlat',                                        # Multilateration position calculated using arrival time differences from multiple receivers
-    'mode_s',                                      # Mode S transponder (no position transmitted)
-    'adsb_other',                                  # ADS-B transponder using a non-ICAO address, such as an anonymized address
-    'adsr_other',                                  # Rebroadcast of ADS-B messages originally sent via UAT transponder, using a non-ICAO address
-    'tisb_other',                                  # Non-ADS-B target using a non-ICAO address
+update_rate = 5                                  # The frequency that this script runs checking for aircraft updates, in seconds
+aircraft_json_path = "/run/readsb/aircraft.json" # Change this if your aircraft.json is in a different location
+aircrafts_json_path = "~/aircrafts.json"         # This is referring to the Mictronics aircraft database. Leave this alone unless you have already downloaded it and would like to store it elsewhere.
+range_miles = 20                                 # Change this to the radius of the notification zone (in miles)
+min_alert_period = 600                           # Change this to the number of seconds to wait before alerting again for the same aircraft
+include_military_check = True                    # Change to False if you don't want to alert based on the military flag being set or the hex falling within the military range  (True will alert regardless of other settings)
+include_emergency_check = True                   # Change to False if you don't want to alert based on the emergency flag being set (True will alert regardless of other settings)
+skip_commercial = True                           # Change to False to include alerts for commerical aircraft (doesn't effect notificaitons for emergency flag being set)
+transponder_types = [                            # Comment in/out rows corresponding to transponder types you want to receive alerts for
+    'adsb_icao',     # Mode S or ADS-B transponder
+ #   'adsb_icao_nt',  # ADS-B equipped “non-transponder” emitter, such as a ground vehicle
+    'adsr_icao',     # Rebroadcast of ADS-B messages originally sent via UAT transponder
+    'tisb_icao',     # Non-ADS-B aircraft
+    'adsc',          # Automatic Dependent Surveillance-Contract received by monitoring satellite downlinks
+    'mlat',          # Multilateration position calculated using arrival time differences from multiple receivers
+    'mode_s',        # Mode S transponder (no position transmitted)
+    'adsb_other',    # ADS-B transponder using a non-ICAO address, such as an anonymized address
+    'adsr_other',    # Rebroadcast of ADS-B messages originally sent via UAT transponder, using a non-ICAO address
+    'tisb_other',    # Non-ADS-B target using a non-ICAO address
 ]
 
-hex_watch_list = {                                 # Add the hex codes of specific aircraft to always alert on
+hex_watch_list = {   # Add the hex codes of specific aircraft to always alert on
     'a35e6b': "Elton John's Bombardier Global Express (M-EDZE)",
     'a35e89': "Oprah Winfrey's Gulfstream G650 (N540W)",
     'a3a8a7': "Elon Musk's Gulfstream V (N272BG)",
@@ -125,10 +125,13 @@ ifttt_webhook_key = ''  # change this to your IFTTT webhook key
 signal_phone_number = ''  # change this to your Signal phone number
 signal_recipients = []  # change this to a list of recipients
 
-#################################################################################
+#############################################################
 
 # Tracking last notification times
 last_notified = {}
+
+# Handle file path if it uses a tilda
+home_dir_check = os.path.expanduser(aircrafts_json_path)
 
 # Function to support downloading updated Mictronics aircraft database
 def download_file(url, path):
@@ -146,7 +149,7 @@ def download_file(url, path):
 # Function to check if there is a newer version of the Mictronics aircraft database and then download it
 def aircrafts_age_check():
     url = 'https://raw.githubusercontent.com/Mictronics/readsb-protobuf/refs/heads/dev/webapp/src/db/aircrafts.json'
-    home_dir_check = os.path.expanduser(aircrafts_json_path)
+    global home_dir_check
     time_check_file = '.time_check'
 
     # Check if .time_check exists
@@ -346,16 +349,38 @@ def send_signal_notification(message_body):
 
 # Function to send notifications through all available methods
 def send_notification(aircraft_info, hex_code, distance, direction, aircraft_owner):
+    global home_dir_check
+    hex_code = hex_code.upper()  # Convert to uppercase to match structure of aircrafts.json
     message_body = f"Bird Alert!\n" \
               f"Aircraft hex: {hex_code}\n" \
               f"Callsign: {aircraft_info.get('flight', 'N/A')}\n" \
-              f"Owner: {aircraft_owner}\n" \
-              f"Distance: {distance:.2f}mi\n" \
-              f"Direction: {direction}\n" \
-              f"Ground Speed: {aircraft_info.get('gs', 'N/A')} knots\n" \
-              f"Transponder: {aircraft_info.get('type', 'N/A')}\n" \
-              f"Military: {'Yes' if aircraft_info.get('military', False) or is_military_aircraft(hex_code) else 'Unknown'}\n" \
-              f"Emergency: {aircraft_info.get('emergency', 'none')}\n"
+              
+    try:
+        with open(home_dir_check, 'r') as f:
+            aircrafts_data = json.load(f)
+            # Find the entry with the matching hex_code (ICAO24)
+            aircraft_entry = aircrafts_data.get(hex_code)
+            if aircraft_entry:
+                type_info = aircraft_entry['d'] if aircraft_entry['d'] else aircraft_entry['t']
+                print(f"Description: {aircraft_entry['d']}\n Type: {aircraft_entry['t']}")
+                message_body += f"Type: {type_info}\n"
+            else:
+                message_body += "Type: Unknown\n"  # Handle case where hex is not found
+    except FileNotFoundError:
+        print(f"File not found: {home_dir_check}")
+        message_body += "Type: Unknown\n"  # Handle file not found
+    except json.JSONDecodeError:
+        print("Error decoding JSON response")
+        message_body += "Type: Unknown\n"  # Handle JSON decode error
+
+
+    message_body += f"Owner: {aircraft_owner}\n" \
+                    f"Distance: {distance:.2f}mi\n" \
+                    f"Direction: {direction}\n" \
+                    f"Ground Speed: {aircraft_info.get('gs', 'N/A')} knots\n" \
+                    f"Transponder: {aircraft_info.get('type', 'N/A')}\n" \
+                    f"Military: {'Yes' if aircraft_info.get('military', False) or is_military_aircraft(hex_code) else 'Unknown'}\n" \
+                    f"Emergency: {aircraft_info.get('emergency', 'none')}\n"
 
     if send_email_notification(message_body):
         return
@@ -533,16 +558,23 @@ def check_aircraft(aircraft):
 # Fetch data from your local ADSBExchange server aircraft.json 
 def fetch_aircraft_data():
     global aircraft_json_path
+    global home_dir_check
     try:
         file_path = aircraft_json_path
         with open(file_path, 'r') as f:
             aircraft_data = json.load(f)
             for aircraft in aircraft_data.get('aircraft', []):
                 check_aircraft(aircraft)
+
+        # Check for aircrafts.json using the home_dir_check variable
+        with open(home_dir_check, 'r') as f:
+            aircrafts_data = json.load(f)
+            # Process aircrafts_data as needed, if it will be used elsewhere
     except FileNotFoundError:
-        print(f"File not found: {file_path}")
+        print(f"File not found: {file_path} or {aircrafts_file_path}")
     except json.JSONDecodeError:
         print("Error decoding JSON response")
+
 
 # Function to run the script based on user defined update rate
 def run_script():
