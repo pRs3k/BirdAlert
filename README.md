@@ -13,6 +13,8 @@ BirdAlert is an aircraft reporting tool for ADSBx receivers that sends notificat
 
 To get notifications using Telegram (my personal preference), search "how to set up botfather, get token and chatid", or follow the steps here https://www.cytron.io/tutorial/how-to-create-a-telegram-bot-get-the-api-key-and-chat-id<br><br>
 
+If you can figure out how to get Signal (signal-cli) working on raspberry pi, please send me the instructions and I'll add support in this script. I tried for a long time and failed.<br><br>
+
 Copy BirdAlert.py to your ADS-B receiver and modify it to set the variables:<br>
 `cd ~`<br>
 `wget https://raw.githubusercontent.com/pRs3k/BirdAlert/refs/heads/main/BirdAlert.py`<br>

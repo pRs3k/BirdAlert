@@ -109,19 +109,19 @@ your_email_app_password = ''  # change this to your email app password
 your_smtp_server = ''  # change this to your email SMTP domain
 your_smtp_port = 587
 
-# Telegram configuration
+# Telegram configuration (Verified working, preferred method)
 telegram_bot_token = ''  # change this to your Telegram bot token
 telegram_chat_id = ''  # change this to your Telegram chat ID
 
-# Pushover configuration
+# Pushover configuration (NOTE: Not tested! If you try using this method please let me know if it works.)
 pushover_user_key = ''  # change this to your Pushover user key
 pushover_app_token = ''  # change this to your Pushover app token
 
-# IFTTT configuration
+# IFTTT configuration (NOTE: Not tested! If you try using this method please let me know if it works.)
 ifttt_webhook_event = ''  # change this to your IFTTT webhook event name
 ifttt_webhook_key = ''  # change this to your IFTTT webhook key
 
-# Signal configuration
+# Signal configuration (NOTE: Not tested! If you try using this method please let me know if it works. I could not get signal-cli running on Raspberry Pi at all.)
 signal_phone_number = ''  # change this to your Signal phone number
 signal_recipients = []  # change this to a list of recipients
 
