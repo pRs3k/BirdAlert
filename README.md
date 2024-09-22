@@ -2,6 +2,7 @@
 BirdAlert is an aircraft reporting tool for ADSBx receivers that sends notifications whenever an aircraft of a certain type enters a certain radius of airspace. The alert includes the aircraft hex, callsign, type, owner, distance, direction, ground speed, transponder type, military flag and emergy flag information.
 
 ## Features
+- Supports notifications via email, Telegram, Signal (untested), IFTTT (untested), and Pushover (untested)
 - Option to set the periodicity that the script parses aircraft.json for new data (default is 5 seconds)
 - Sends an alert based on user defined transponders, callsigns, hex codes, military flag, or emergency flag values
 - Option to set the minimum amount of time between notifications for a given aircraft (default is 10 minutes)
@@ -13,7 +14,7 @@ BirdAlert is an aircraft reporting tool for ADSBx receivers that sends notificat
 
 To get notifications using Telegram (my personal preference), search "how to set up botfather, get token and chatid", or follow the steps here https://www.cytron.io/tutorial/how-to-create-a-telegram-bot-get-the-api-key-and-chat-id<br><br>
 
-If you can figure out how to get Signal (signal-cli) working on raspberry pi, please send me the instructions and I'll add support in this script. I tried for a long time and failed.<br><br>
+If you can figure out how to get Signal (signal-cli) working on Raspberry Pi, please send me the instructions and I'll add support in this script. I tried for a long time and failed.<br><br>
 
 Copy BirdAlert.py to your ADS-B receiver and modify it to set the variables:<br>
 `cd ~`<br>
@@ -36,7 +37,7 @@ If you need to stop BirdAlert or modify the configuration variables:<br>
 - [ ] Add the ability to schedule the script to run only at certain times of day
 - [x] ~~Make it easier to customize/select custom alert rules~~
 - [ ] Account for aircraft using TIS-B that may rapidly change their hex code (which begin with "~") leading to a flood of notifications
-- [ ] Add error handling for notification failures
+- [x] Add error handling for notification failures
 - [x] Allow for hex code specific notifications
 - [x] Allow for callsign specific notifications
 - [ ] Clean up terminal output to be more compact
