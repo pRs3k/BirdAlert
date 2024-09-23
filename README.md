@@ -34,18 +34,19 @@ If you need to stop BirdAlert or modify the configuration variables:<br>
 
 ## Future Enhancements
 - [ ] Allow for notifications using email-to-SMS
+- [ ] Figure out where the "interesting" aircraft database comes from on adsbx and incorporate it here
 - [ ] Add the ability to schedule the script to run only at certain times of day
 - [x] ~~Make it easier to customize/select custom alert rules~~
 - [ ] Account for aircraft using TIS-B that may rapidly change their hex code (which begin with "~") leading to a flood of notifications
-- [x] Add error handling for notification failures
-- [x] Allow for hex code specific notifications
-- [x] Allow for callsign specific notifications
+- [x] ~~Add error handling for notification failures~~
+- [x] ~~Allow for hex code specific notifications~~
+- [x] ~~Allow for callsign specific notifications~~
 - [ ] Clean up terminal output to be more compact
 - [x] ~~Add more commercial airline callsigns to the ignore list~~
 - [ ] Investigate if data could also be taken from https://globe.adsbexchange.com/ as a separate option, ex. using a browser plugin
 - [ ] Incorporate category codes into alerts
 - [ ] Allow for category specific notifications
-- [x] Use the database of known aircraft information to give more details in notifications
+- [x] ~~Use the database of known aircraft information to give more details in notifications~~
 
 ## Comments
 - Email-to-SMS is increasingly more difficult due to email providers implementing spam restrictions/rate limiting

@@ -148,7 +148,7 @@ def download_file(url, path):
 
 # Function to check if there is a newer version of the Mictronics aircraft database and then download it
 def aircrafts_age_check():
-    url = 'https://raw.githubusercontent.com/Mictronics/readsb-protobuf/refs/heads/dev/webapp/src/db/aircrafts.json'
+    url = 'https://raw.githubusercontent.com/Mictronics/readsb/refs/heads/master/webapp/src/db/aircrafts.json'
     global home_dir_check
     time_check_file = '.time_check'
 
