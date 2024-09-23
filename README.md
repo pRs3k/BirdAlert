@@ -20,8 +20,8 @@ Copy BirdAlert.py to your ADS-B receiver and modify it to set the variables:<br>
 `cd ~`<br>
 `wget https://raw.githubusercontent.com/pRs3k/BirdAlert/refs/heads/main/BirdAlert.py`<br>
 `nano BirdAlert.py`<br><br>
-If using an operating system that supports crontab, enable the script to run on boot:<br>
-`sudo crontab -e`<br><br>
+If using an operating system that supports crontab, enable the script to run on boot (do not execute as sudo or the script won't work right):<br>
+`crontab -e`<br><br>
 Add the following line to the bottom of your crontab file:<br>
 `@reboot /usr/bin/python3 <path to BirdAlert.py>`<br><br>
 Save, and then reboot the device<br>
