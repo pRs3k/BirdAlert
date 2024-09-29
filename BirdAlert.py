@@ -7,10 +7,16 @@ import time
 import requests
 import subprocess
 from math import radians, cos, sin, asin, sqrt, atan2, degrees
+from datetime import datetime, timedelta
 
 #############################################################
 
 # Script behavior
+active_start_hour = 0                            # Hour of the day (local system time) to start the script (using 24-hour format)
+active_start_minute = 0                          # Minute of the day (local system time) to start the script
+active_end_hour = 23                             # Hour of the day (local system time) to pause the script (using 24-hour format)
+active_end_minute = 59                           # Minute of the day (local system time) to pause the script
+selected_days = [0, 1, 2, 3, 4, 5, 6]            # Day of the week (local system time) to run the script (0 - Sunday, 1 - Monday, 2 - Tuesday, etc.)
 update_rate = 5                                  # The frequency that this script runs checking for aircraft updates, in seconds
 aircraft_json_path = "/run/readsb/aircraft.json" # Change this if your aircraft.json is in a different location
 aircrafts_json_path = "~/aircrafts.json"         # This is referring to the Mictronics aircraft database. Leave this alone unless you have already downloaded it and would like to store it elsewhere.
@@ -130,11 +136,36 @@ signal_phone_number = ''  # change this to your Signal phone number
 signal_recipients = []  # change this to a list of recipients
 
 # Twilio configuration (NOTE: Not tested! If you try using this method please let me know if it works.)
-twilio_sid = 'your_account_sid'
-twilio_auth_token = 'your_auth_token'
-twilio_phone_number = 'your_twilio_phone_number'
+twilio_sid = ''
+twilio_auth_token = ''
+twilio_phone_number = ''
 
 #############################################################
+
+def is_today_selected_day(selected_days):
+    """Check if today is one of the selected days."""
+    today = datetime.now().weekday()  # Monday is 0 and Sunday is 6
+    return today in selected_days
+
+def run_schedule(active_start_time, active_end_time, selected_days):
+    """Check the schedule and wait if outside the permitted time or day."""
+    now = datetime.now()
+
+    # Check if today is one of the selected days
+    if is_today_selected_day(selected_days):
+        # Check if the current time is within the active start and end time
+        if active_start_time <= now.time() <= active_end_time:
+            print("Currently within scheduled hours. Tracking aircraft...\n")
+            # You can call your aircraft tracking logic here if needed
+            return True  # Return True to indicate it's the right time to run
+        else:
+            print("Current time is outside the scheduled hours. Waiting...\n")
+    else:
+        print("Today is not a scheduled day. Waiting...\n")
+
+    # If we reach here, we are either outside the time or it's not the selected day
+    time.sleep(5)  # Wait 5 seconds before the next check
+    return False  # Return False to indicate it's not the right time to run
 
 # Tracking last notification times
 last_notified = {}
@@ -660,13 +691,17 @@ def fetch_aircraft_data():
 
 # Function to run the script based on user defined update rate
 def run_script():
+    active_start_time = datetime.now().replace(hour=active_start_hour, minute=active_start_minute).time()
+    active_end_time = datetime.now().replace(hour=active_end_hour, minute=active_end_minute).time()
     while True:
-        global update_rate
-        start_time = time.time()
-        aircrafts_age_check()
-        fetch_aircraft_data()
-        elapsed_time = time.time() - start_time
-        time.sleep(max(update_rate - elapsed_time, 0))
+        if run_schedule(active_start_time, active_end_time, selected_days):
+            print("Executing aircraft tracking logic...\n")
+            global update_rate
+            start_time = time.time()
+            aircrafts_age_check()
+            fetch_aircraft_data()
+            elapsed_time = time.time() - start_time
+            time.sleep(max(update_rate - elapsed_time, 0))
 
 if __name__ == "__main__":
     run_script()
