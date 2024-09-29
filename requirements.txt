@@ -1,0 +1,6 @@
+
+# Required packages
+requests        # For downloading the updated Mictronics database
+
+# Optional packages (depending on the notification method used)
+twilio          # For Twilio notifications

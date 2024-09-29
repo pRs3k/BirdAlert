@@ -91,7 +91,7 @@ hex_watch_list = {   # Add the hex codes of specific aircraft to always alert on
     'a96f69': "John Travolta's Boeing 707-136B"
 }
 
-# List of callsigns to watch for
+# List of operator callsigns to watch for
 callsign_watch_list = [
     "CAP",                                         # Civil Air Patrol
 ]
@@ -103,11 +103,15 @@ your_lon = longitude_here  # change this to the longitude of the notification zo
 # Choose as many of the following notification methods as you like (it's not necessary to comment them out if you don't use them).
 # The script will try them in order and stop after the first successful notification is sent.
 
-# Email configuration
+# Email configuration (required for email-to-self and email-to-sms)
 your_email = ''  # change this to your email
 your_email_app_password = ''  # change this to your email app password
 your_smtp_server = ''  # change this to your email SMTP domain
 your_smtp_port = 587
+
+# Phone configuration (required for email-to-SMS only)
+phone_number = ""  # Replace with the recipient's phone number (no dashes or spaces)
+carrier_gateway = ""  # Use the recipient's carrier's email-to-SMS gateway
 
 # Telegram configuration (Verified working, preferred method)
 telegram_bot_token = ''  # change this to your Telegram bot token
@@ -124,6 +128,11 @@ ifttt_webhook_key = ''  # change this to your IFTTT webhook key
 # Signal configuration (NOTE: Not tested! If you try using this method please let me know if it works. I could not get signal-cli running on Raspberry Pi at all.)
 signal_phone_number = ''  # change this to your Signal phone number
 signal_recipients = []  # change this to a list of recipients
+
+# Twilio configuration (NOTE: Not tested! If you try using this method please let me know if it works.)
+twilio_sid = 'your_account_sid'
+twilio_auth_token = 'your_auth_token'
+twilio_phone_number = 'your_twilio_phone_number'
 
 #############################################################
 
@@ -274,6 +283,40 @@ def send_email_notification(message_body):
     except Exception as e:
         print(f"Failed to send email: {e}\n")
         return False
+    
+# Function to send email-to-sms notification
+def send_sms_via_email(message_body):
+    recipient = f"{phone_number}@{carrier_gateway}"
+    subject = "Bird Alert!"
+    message = f"Subject: {subject}\n\n{message_body}"
+
+    try:
+        with smtplib.SMTP(your_smtp_server, your_smtp_port) as server:
+            server.starttls()
+            server.login(your_email, your_email_app_password)
+            server.sendmail(your_email, recipient, message)
+            print(f"Sending SMS to {phone_number}@{carrier_gateway}: {message_body}\n")
+        return True
+    except Exception as e:
+        print(f"Failed to send email-to-SMS: {e}\n")
+        return False
+
+# Function to send a Twilio notification
+def send_twilio_sms_notification(message_body):
+    from twilio.rest import Client
+    client = Client(twilio_sid, twilio_auth_token)
+
+    try:
+        message = client.messages.create(
+            body=message_body,
+            from_=twilio_phone_number,
+            to=twilio_phone_number
+        )
+        print(f"Sending SMS to {twilio_phone_number}: {message_body}\n")
+        return True
+    except Exception as e:
+        print(f"Failed to send Twilio SMS: {e}\n")
+        return False
 
 # Function to send a Telegram notification
 def send_telegram_notification(message_body):
@@ -359,7 +402,7 @@ def send_signal_notification(message_body):
         return False
 
 # Function to send notifications through all available methods
-def send_notification(aircraft_info, hex_code, distance, direction, aircraft_owner):
+def send_notification(aircraft_info, hex_code, distance, direction):
     global home_dir_check
     hex_code = hex_code.upper()  # Convert to uppercase to match structure of aircrafts.json
     message_body = f"Bird Alert!\n" \
@@ -385,15 +428,14 @@ def send_notification(aircraft_info, hex_code, distance, direction, aircraft_own
         message_body += "Type: Unknown\n"  # Handle JSON decode error
 
 
-    message_body += f"Owner: {aircraft_owner}\n" \
-                    f"Distance: {distance:.2f}mi\n" \
+    message_body += f"Distance: {distance:.2f}mi\n" \
                     f"Direction: {direction}\n" \
                     f"Ground Speed: {aircraft_info.get('gs', 'N/A')} knots\n" \
                     f"Transponder: {aircraft_info.get('type', 'N/A')}\n" \
                     f"Military: {'Yes' if aircraft_info.get('military', False) or is_military_aircraft(hex_code) else 'Unknown'}\n" \
                     f"Emergency: {aircraft_info.get('emergency', 'none')}\n"
 
-    if not your_email or not your_email_app_password or not your_smtp_server:
+    if not your_email or not your_email_app_password or not your_smtp_server or not your_smtp_port:
         pass
     else:
         send_email_notification(message_body)
@@ -403,6 +445,18 @@ def send_notification(aircraft_info, hex_code, distance, direction, aircraft_own
         pass
     else:
         send_telegram_notification(message_body)
+        return
+
+    if not your_email or not your_email_app_password or not your_smtp_server or not your_smtp_port or not phone_number or not carrier_gateway:
+        pass
+    else:
+        send_sms_via_email(message_body)
+        return
+
+    if not twilio_phone_number or not twilio_auth_token or not twilio_sid:
+        pass
+    else:
+        send_twilio_sms_notification(message_body)
         return
 
     if not ifttt_webhook_event or not ifttt_webhook_key:
@@ -438,7 +492,6 @@ def check_aircraft(aircraft):
     global transponder_types
     global min_alert_period
     global hex_watch_list
-    aircraft_owner = "Unknown"
 
     # Calculate distance and direction only if lat and lon are available
     if lat is not None and lon is not None:
@@ -457,9 +510,8 @@ def check_aircraft(aircraft):
 
         # 2. Check if the hex code matches the watch list
         if hex_code in hex_watch_list:
-            aircraft_owner = hex_watch_list[hex_code]
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
-                send_notification(aircraft, hex_code, dist, direction, aircraft_owner)
+                send_notification(aircraft, hex_code, dist, direction)
                 last_notified[hex_code] = current_time
             else:
                 print(f"Skipping aircraft hex {hex_code}: Last alert sent {int((current_time - last_notified[hex_code]) / 60)} minutes ago.\n\n")
@@ -469,7 +521,7 @@ def check_aircraft(aircraft):
         for callsign in callsign_watch_list:
             if flight.startswith(callsign):
                 if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
-                    send_notification(aircraft, hex_code, dist, direction, aircraft_owner)
+                    send_notification(aircraft, hex_code, dist, direction)
                     last_notified[hex_code] = current_time
                 else:
                     print(f"Skipping aircraft hex {hex_code}: Last alert sent {int((current_time - last_notified[hex_code]) / 60)} minutes ago.\n\n")
@@ -478,7 +530,7 @@ def check_aircraft(aircraft):
         # 4. Check if the emergency flag is set
         if (include_emergency_check and emergency_flag != 'none'):
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
-                send_notification(aircraft, hex_code, dist, direction, aircraft_owner)
+                send_notification(aircraft, hex_code, dist, direction)
                 last_notified[hex_code] = current_time
             else:
                 print(f"Skipping aircraft hex {hex_code}: Last alert sent {int((current_time - last_notified[hex_code]) / 60)} minutes ago.\n\n")
@@ -567,7 +619,7 @@ def check_aircraft(aircraft):
         # 6. Check if the hex code or flag indicates military
         if (include_military_check and (aircraft.get('military', False) or is_military_aircraft(hex_code))):
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
-                send_notification(aircraft, hex_code, dist, direction, aircraft_owner)
+                send_notification(aircraft, hex_code, dist, direction)
                 last_notified[hex_code] = current_time
             else:
                 print(f"Skipping aircraft hex {hex_code}: Last alert sent {int((current_time - last_notified[hex_code]) / 60)} minutes ago.\n\n")
@@ -576,7 +628,7 @@ def check_aircraft(aircraft):
         # 7. Check the transponder type
         if transponder_type in transponder_types:
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
-                send_notification(aircraft, hex_code, dist, direction, aircraft_owner)
+                send_notification(aircraft, hex_code, dist, direction)
                 last_notified[hex_code] = current_time
             else:
                 print(f"Skipping aircraft hex {hex_code}: Last alert sent {int((current_time - last_notified[hex_code]) / 60)} minutes ago.\n\n")

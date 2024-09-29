@@ -1,8 +1,8 @@
 # BirdAlert
-BirdAlert is an aircraft reporting tool for ADSBx receivers that sends notifications whenever an aircraft of a certain type enters a certain radius of airspace. The alert includes the aircraft hex, callsign, type, owner, distance, direction, ground speed, transponder type, military flag and emergy flag information.
+BirdAlert is an aircraft reporting tool for ADS-B receivers that sends notifications whenever an aircraft of a certain type enters a certain radius of airspace. The alert includes the aircraft hex, callsign, type, owner, distance, direction, ground speed, transponder type, military flag and emergy flag information.
 
 ## Features
-- Supports notifications via email, Telegram, Signal (untested), IFTTT (untested), and Pushover (untested)
+- Supports notifications via email, email-to-sms (untested), Twilio (untested), Telegram, Signal (untested), IFTTT (untested), and Pushover (untested)
 - Option to set the periodicity that the script parses aircraft.json for new data (default is 5 seconds)
 - Sends an alert based on user defined transponders, callsigns, hex codes, military flag, or emergency flag values
 - Option to set the minimum amount of time between notifications for a given aircraft (default is 10 minutes)
@@ -16,6 +16,8 @@ To get notifications using Telegram (my personal preference), search "how to set
 
 If you can figure out how to get Signal (signal-cli) working on Raspberry Pi, please send me the instructions and I'll add support in this script. I tried for a long time and failed.<br><br>
 
+Install the required Python modules:<br>
+`pip install -r requirements.txt`<br>
 Copy BirdAlert.py to your ADS-B receiver and modify it to set the variables:<br>
 `cd ~`<br>
 `wget https://raw.githubusercontent.com/pRs3k/BirdAlert/refs/heads/main/BirdAlert.py`<br>
@@ -33,7 +35,9 @@ If you need to stop BirdAlert or modify the configuration variables:<br>
 `sudo reboot now`
 
 ## Future Enhancements
-- [ ] Allow for notifications using email-to-SMS
+- [ ] Switch to using the new Mictronics aircraft database that receives regular updates https://github.com/Mictronics/readsb-protobuf/blob/dev/webapp/src/db/aircrafts.json by parsing the Mictronics types database https://github.com/Mictronics/readsb-protobuf/blob/dev/webapp/src/db/types.json 
+- [ ] Use the Mictronics operator database to include more comprehensive filtering https://github.com/Mictronics/readsb-protobuf/blob/dev/webapp/src/db/operators.json
+- [x] ~~Allow for notifications using email-to-SMS~~
 - [ ] Figure out where the "interesting" aircraft database comes from on adsbx and incorporate it here
 - [ ] Add the ability to schedule the script to run only at certain times of day
 - [x] ~~Make it easier to customize/select custom alert rules~~
