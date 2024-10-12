@@ -31,8 +31,7 @@ Add the following line to the bottom of your crontab file:<br>
 Save, and then reboot the device<br>
 `sudo reboot now`<br><br>
 If you need to stop BirdAlert or modify the configuration variables:<br>
-`ps aux | grep -i birdalert`<br>
-`kill <pid of BirdAlert.py, there will be 2 processes to kill>`<br>
+`pkill -f BirdAlert.py`<br>
 `nano BirdAlert.py`<br>
 `sudo reboot now`
 

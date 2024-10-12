@@ -160,6 +160,9 @@ if is_script_running():
     print("Another instance of the script is already running.")
     sys.exit()
 
+# Variable to load in aircrafts.json data
+aircrafts_data = None
+
 # Tracking last notification times
 last_notified = {}
 
@@ -171,6 +174,15 @@ aircrafts_json_path_expanded = os.path.expanduser(aircrafts_json_path)
 
 # Capture terminal output to be tabulated
 terminal_table = []
+
+# Load the aircrafts JSON file once at the beginning
+try:
+    with open(aircrafts_json_path_expanded, 'r') as f:
+        aircrafts_data = json.load(f)
+except FileNotFoundError:
+    print(f"File not found: {aircrafts_json_path_expanded}")
+except json.JSONDecodeError:
+    print("Error decoding JSON response")
 
 os.system('clear' if os.name != 'nt' else 'cls')
 
@@ -217,6 +229,7 @@ def download_file(url, path):
 def aircrafts_age_check():
     url = 'https://raw.githubusercontent.com/Mictronics/readsb/refs/heads/master/webapp/src/db/aircrafts.json'
     global aircrafts_json_path_expanded
+    global aircrafts_data
     time_check_file = '.time_check'
 
     # Check if .time_check exists
@@ -233,15 +246,25 @@ def aircrafts_age_check():
     current_time = time.time()
 
     # If .time_check is new or it's been more than an hour since the last check
-    if is_new_time_check or (current_time - last_check_time) > 3600:
+    if is_new_time_check or (current_time - last_check_time) > 86400:
         global aircrafts_status
         if is_new_aircrafts_json:
             aircrafts_status = (f"{aircrafts_json_path_expanded} not found. Downloading for the first time...\n")
         else:
-            aircrafts_status = ("More than 1 hour since last check for updated Micronics database. Checking for updates...\n")
+            aircrafts_status = ("More than 24 hours since last download of Micronics database. Downloading latest file...\n")
         
         # Download the latest aircrafts.json
         download_file(url, aircrafts_json_path_expanded)
+
+        # Load the updated aircrafts.json
+        try:
+            with open(aircrafts_json_path_expanded, 'r') as f:
+                aircrafts_data = json.load(f)
+        except FileNotFoundError:
+            print(f"File not found: {aircrafts_json_path_expanded}")
+        except json.JSONDecodeError:
+            print("Error decoding JSON response")
+
         # Update the .time_check file to the current time
         os.utime(time_check_file, (current_time, current_time))
     else:
@@ -457,16 +480,16 @@ def send_signal_notification(message_body):
 def send_notification(aircraft, hex_code, distance, direction):
     global aircrafts_json_path_expanded
     global terminal_table
-    hex_code = hex_code.upper()  # Convert to uppercase to match structure of aircrafts.json
+    global aircrafts_data
+    hex_code_upper = hex_code.upper()  # Convert to uppercase to match structure of aircrafts.json
     message_body = f"Bird Alert!\n" \
-              f"Aircraft hex: {hex_code}\n" \
+              f"Aircraft hex: {hex_code_upper}\n" \
               f"Callsign: {aircraft.get('flight', 'N/A')}\n" \
               
     try:
         with open(aircrafts_json_path_expanded, 'r') as f:
-            aircrafts_data = json.load(f)
             # Find the entry with the matching hex_code (ICAO24)
-            aircraft_entry = aircrafts_data.get(hex_code)
+            aircraft_entry = aircrafts_data.get(hex_code_upper)
             if aircraft_entry:
                 type_info = aircraft_entry.get('d') or aircraft_entry.get('t') or 'Unknown'
                 message_body += f"Type: {type_info}\n"
@@ -484,7 +507,7 @@ def send_notification(aircraft, hex_code, distance, direction):
                     f"Direction: {direction}\n" \
                     f"Ground Speed: {aircraft.get('gs', 'N/A')} knots\n" \
                     f"Transponder: {aircraft.get('type', 'N/A')}\n" \
-                    f"Military: {'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown'}\n" \
+                    f"Military: {'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code_upper) else 'Unknown'}\n" \
                     f"Emergency: {aircraft.get('emergency', 'none')}\n"
     
     if not your_email or not your_email_app_password or not your_smtp_server or not your_smtp_port:
@@ -544,12 +567,22 @@ def check_aircraft(aircraft):
     global transponder_types
     global min_alert_period
     global hex_watch_list
+    global aircrafts_data
+    hex_code_upper = hex_code.upper()  # Convert to uppercase to match structure of aircrafts.json
 
     # Calculate distance and direction only if lat and lon are available
     if lat is not None and lon is not None:
         dist = haversine(your_lat, your_lon, lat, lon)
         direction = calculate_direction(your_lat, your_lon, lat, lon)
         current_time = time.time()
+
+        # Capture aircraft type data
+        aircraft_entry = aircrafts_data.get(hex_code_upper)
+        if aircraft_entry:
+            type_info = aircraft_entry.get('d') or aircraft_entry.get('t') or 'Unknown'
+        else:
+            type_info = 'Unknown'
+            pass  # Handle case where hex is not found
 
         # 1. Check if aircraft is within the defined range
         if dist > range_miles:
@@ -560,9 +593,9 @@ def check_aircraft(aircraft):
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
                 send_notification(aircraft, hex_code, dist, direction)
                 last_notified[hex_code] = current_time
-                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Hex code in watch list"))
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), type_info, f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Hex code in watch list"))
             else:
-                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Hex code in watch list"))
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), type_info, f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Hex code in watch list"))
             return
         
         # 3. Check if the callsign matches the watch list
@@ -571,9 +604,9 @@ def check_aircraft(aircraft):
                 if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
                     send_notification(aircraft, hex_code, dist, direction)
                     last_notified[hex_code] = current_time
-                    terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Callsign in watch list"))
+                    terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), type_info, f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Callsign in watch list"))
                 else:
-                    terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Callsign in watch list"))
+                    terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), type_info, f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Callsign in watch list"))
                 return
 
         # 4. Check if the emergency flag is set
@@ -581,9 +614,9 @@ def check_aircraft(aircraft):
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
                 send_notification(aircraft, hex_code, dist, direction)
                 last_notified[hex_code] = current_time
-                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist=:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Emergency flag set"))
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), type_info, f"{dist=:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Emergency flag set"))
             else:
-                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist=:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Emergency flag set"))
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), type_info, f"{dist=:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Emergency flag set"))
             return
 
         # 5. Check if the callsign belongs to a commercial airline
@@ -670,9 +703,9 @@ def check_aircraft(aircraft):
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
                 send_notification(aircraft, hex_code, dist, direction)
                 last_notified[hex_code] = current_time
-                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Military aircraft"))
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), type_info, f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Military aircraft"))
             else:
-                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Military aircraft"))
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), type_info, f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Military aircraft"))
             return
         
         # 7. Check the transponder type
@@ -680,9 +713,9 @@ def check_aircraft(aircraft):
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
                 send_notification(aircraft, hex_code, dist, direction)
                 last_notified[hex_code] = current_time
-                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Matches desired transponder type"))
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), type_info, f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Matches desired transponder type"))
             else:
-                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Matches desired transponder type"))
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), type_info, f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Matches desired transponder type"))
         else:
             pass
     else:
@@ -698,10 +731,6 @@ def fetch_aircraft_data():
             aircraft_data = json.load(f)
             for aircraft in aircraft_data.get('aircraft', []):
                 check_aircraft(aircraft)
-
-        # Check for aircrafts.json using the aircrafts_json_path_expanded variable
-        with open(aircrafts_json_path_expanded, 'r') as f:
-            aircrafts_data = json.load(f)
     except FileNotFoundError:
         print(f"File not found: {aircraft_json_path} or {aircrafts_json_path_expanded}")
     except json.JSONDecodeError:
@@ -709,7 +738,7 @@ def fetch_aircraft_data():
 
 def display_alerts():
     global terminal_table
-    headers = ["Hex Code", "Callsign", "Distance (mi)", "Direction", "Speed (kt)", "Transponder Type", "Military", "Emergency", "Alert Sent", "Comment"]
+    headers = ["Hex Code", "Callsign", "Aircraft Type", "Distance (mi)", "Direction", "Speed (kt)", "Transponder Type", "Military", "Emergency", "Alert Sent", "Comment"]
     print(tabulate(terminal_table, headers=headers, tablefmt="grid"))
     print(f"\n{aircrafts_status}")
     terminal_table = []
