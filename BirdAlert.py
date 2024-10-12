@@ -8,6 +8,9 @@ import requests
 import subprocess
 from math import radians, cos, sin, asin, sqrt, atan2, degrees
 from datetime import datetime, timedelta
+from tabulate import tabulate
+import subprocess
+import sys
 
 #############################################################
 
@@ -142,6 +145,35 @@ twilio_phone_number = ''
 
 #############################################################
 
+def is_script_running():
+    # Run pgrep command to find instances of the script
+    try:
+        result = subprocess.run(['pgrep', '-f',"BirdAlert.py"], capture_output=True, text=True)
+        # Get the number of lines returned
+        pids = result.stdout.strip().split('\n')
+        return len(pids) >= 2  # Return True if 2 or more PIDs are found
+    except Exception as e:
+        print(f"Error checking script status: {e}")
+        return False
+
+if is_script_running():
+    print("Another instance of the script is already running.")
+    sys.exit()
+
+# Tracking last notification times
+last_notified = {}
+
+# Capture status of aircrafts.json for printing
+aircrafts_status = []
+
+# Handle file path if it uses a tilda
+aircrafts_json_path_expanded = os.path.expanduser(aircrafts_json_path)
+
+# Capture terminal output to be tabulated
+terminal_table = []
+
+os.system('clear' if os.name != 'nt' else 'cls')
+
 def is_today_selected_day(selected_days):
     """Check if today is one of the selected days."""
     today = datetime.now().weekday()  # Monday is 0 and Sunday is 6
@@ -155,9 +187,8 @@ def run_schedule(active_start_time, active_end_time, selected_days):
     if is_today_selected_day(selected_days):
         # Check if the current time is within the active start and end time
         if active_start_time <= now.time() <= active_end_time:
-            print("Currently within scheduled hours. Tracking aircraft...\n")
-            # You can call your aircraft tracking logic here if needed
-            return True  # Return True to indicate it's the right time to run
+            print("Currently within scheduled hours. Tracking aircraft...")
+            return True
         else:
             print("Current time is outside the scheduled hours. Waiting...\n")
     else:
@@ -165,13 +196,9 @@ def run_schedule(active_start_time, active_end_time, selected_days):
 
     # If we reach here, we are either outside the time or it's not the selected day
     time.sleep(5)  # Wait 5 seconds before the next check
-    return False  # Return False to indicate it's not the right time to run
+    return False
 
-# Tracking last notification times
-last_notified = {}
 
-# Handle file path if it uses a tilda
-home_dir_check = os.path.expanduser(aircrafts_json_path)
 
 # Function to support downloading updated Mictronics aircraft database
 def download_file(url, path):
@@ -189,7 +216,7 @@ def download_file(url, path):
 # Function to check if there is a newer version of the Mictronics aircraft database and then download it
 def aircrafts_age_check():
     url = 'https://raw.githubusercontent.com/Mictronics/readsb/refs/heads/master/webapp/src/db/aircrafts.json'
-    global home_dir_check
+    global aircrafts_json_path_expanded
     time_check_file = '.time_check'
 
     # Check if .time_check exists
@@ -199,7 +226,7 @@ def aircrafts_age_check():
         open(time_check_file, 'a').close()  # Create the .time_check file
 
     # Check if aircrafts.json exists
-    is_new_aircrafts_json = not os.path.exists(home_dir_check)
+    is_new_aircrafts_json = not os.path.exists(aircrafts_json_path_expanded)
 
     # Check the last modified time of the .time_check file
     last_check_time = os.path.getmtime(time_check_file)
@@ -207,17 +234,18 @@ def aircrafts_age_check():
 
     # If .time_check is new or it's been more than an hour since the last check
     if is_new_time_check or (current_time - last_check_time) > 3600:
+        global aircrafts_status
         if is_new_aircrafts_json:
-            print(f"{home_dir_check} not found. Downloading for the first time...\n")
+            aircrafts_status = (f"{aircrafts_json_path_expanded} not found. Downloading for the first time...\n")
         else:
-            print("More than 1 hour since last check for updated Micronics database. Checking for updates...\n")
+            aircrafts_status = ("More than 1 hour since last check for updated Micronics database. Checking for updates...\n")
         
         # Download the latest aircrafts.json
-        download_file(url, home_dir_check)
+        download_file(url, aircrafts_json_path_expanded)
         # Update the .time_check file to the current time
         os.utime(time_check_file, (current_time, current_time))
     else:
-        print("Less than 1 hour since last check for updated Micronics database. Skipping...\n")
+        aircrafts_status = ("Less than 1 hour since last check for updated Micronics database. Skipping check...")
 
 def is_military_aircraft(hex_code):
     # Remove the '~' character if it exists
@@ -309,10 +337,9 @@ def send_email_notification(message_body):
             server.starttls()
             server.login(your_email, your_email_app_password)
             server.sendmail(your_email, your_email, message_body)
-            print(f"Sending Email: {message_body}\n")
         return True
     except Exception as e:
-        print(f"Failed to send email: {e}\n")
+        print(f"Failed to send email: {e}. Check valid credentials are set.\n")
         return False
     
 # Function to send email-to-sms notification
@@ -326,10 +353,9 @@ def send_sms_via_email(message_body):
             server.starttls()
             server.login(your_email, your_email_app_password)
             server.sendmail(your_email, recipient, message)
-            print(f"Sending SMS to {phone_number}@{carrier_gateway}: {message_body}\n")
         return True
     except Exception as e:
-        print(f"Failed to send email-to-SMS: {e}\n")
+        print(f"Failed to send email-to-SMS: {e}. Check valid credentials are set.\n")
         return False
 
 # Function to send a Twilio notification
@@ -343,10 +369,9 @@ def send_twilio_sms_notification(message_body):
             from_=twilio_phone_number,
             to=twilio_phone_number
         )
-        print(f"Sending SMS to {twilio_phone_number}: {message_body}\n")
         return True
     except Exception as e:
-        print(f"Failed to send Twilio SMS: {e}\n")
+        print(f"Failed to send Twilio SMS: {e}. Check valid credentials are set.\n")
         return False
 
 # Function to send a Telegram notification
@@ -363,10 +388,9 @@ def send_telegram_notification(message_body):
     try:
         response = requests.post(url, json=payload)
         response.raise_for_status()
-        print("Telegram message sent\n")
         return True
     except Exception as e:
-        print(f"Failed to send Telegram message: {e}\n")
+        print(f"Failed to send Telegram message: {e}. Check valid credentials are set.\n")
         return False
 
 # Function to send a Pushover notification
@@ -384,10 +408,9 @@ def send_pushover_notification(message_body):
     try:
         response = requests.post(url, data=payload)
         response.raise_for_status()
-        print("Pushover message sent\n")
         return True
     except Exception as e:
-        print(f"Failed to send Pushover message: {e}\n")
+        print(f"Failed to send Pushover message: {e}. Check valid credentials are set.\n")
         return False
 
 # Function to send a notification via IFTTT
@@ -401,10 +424,9 @@ def send_ifttt_notification(message_body):
     try:
         response = requests.post(url, json=payload)
         response.raise_for_status()
-        print("IFTTT notification sent\n")
         return True
     except Exception as e:
-        print(f"Failed to send IFTTT notification: {e}\n")
+        print(f"Failed to send IFTTT notification: {e}. Check valid credentials are set.\n")
         return False
 
 # Function to send a Signal notification
@@ -416,43 +438,42 @@ def send_signal_notification(message_body):
         for recipient in signal_recipients:
             # Use subprocess to execute the Signal CLI command
             command = [
-                "signal-cli",  # The Signal CLI command
-                "-u", signal_phone_number,  # The sender's phone number
-                "send",  # Action to send a message
-                "-m", message_body,  # The message content
-                recipient  # The recipient's phone number
+                "signal-cli",
+                "-u", signal_phone_number,
+                "send",
+                "-m", message_body,
+                recipient
             ]
 
             # Run the command and wait for it to complete
             subprocess.run(command, check=True)
 
-            print(f"Signal message sent to {recipient}: {message_body}\n")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"Failed to send Signal message: {e}\n")
+        print(f"Failed to send Signal message: {e}. Check valid credentials are set.\n")
         return False
 
 # Function to send notifications through all available methods
-def send_notification(aircraft_info, hex_code, distance, direction):
-    global home_dir_check
+def send_notification(aircraft, hex_code, distance, direction):
+    global aircrafts_json_path_expanded
+    global terminal_table
     hex_code = hex_code.upper()  # Convert to uppercase to match structure of aircrafts.json
     message_body = f"Bird Alert!\n" \
               f"Aircraft hex: {hex_code}\n" \
-              f"Callsign: {aircraft_info.get('flight', 'N/A')}\n" \
+              f"Callsign: {aircraft.get('flight', 'N/A')}\n" \
               
     try:
-        with open(home_dir_check, 'r') as f:
+        with open(aircrafts_json_path_expanded, 'r') as f:
             aircrafts_data = json.load(f)
             # Find the entry with the matching hex_code (ICAO24)
             aircraft_entry = aircrafts_data.get(hex_code)
             if aircraft_entry:
-                type_info = aircraft_entry['d'] if aircraft_entry['d'] else aircraft_entry['t']
-                print(f"Description: {aircraft_entry['d']}\n Type: {aircraft_entry['t']}")
+                type_info = aircraft_entry.get('d') or aircraft_entry.get('t') or 'Unknown'
                 message_body += f"Type: {type_info}\n"
             else:
                 message_body += "Type: Unknown\n"  # Handle case where hex is not found
     except FileNotFoundError:
-        print(f"File not found: {home_dir_check}")
+        print(f"File not found: {aircrafts_json_path_expanded}")
         message_body += "Type: Unknown\n"  # Handle file not found
     except json.JSONDecodeError:
         print("Error decoding JSON response")
@@ -461,11 +482,11 @@ def send_notification(aircraft_info, hex_code, distance, direction):
 
     message_body += f"Distance: {distance:.2f}mi\n" \
                     f"Direction: {direction}\n" \
-                    f"Ground Speed: {aircraft_info.get('gs', 'N/A')} knots\n" \
-                    f"Transponder: {aircraft_info.get('type', 'N/A')}\n" \
-                    f"Military: {'Yes' if aircraft_info.get('military', False) or is_military_aircraft(hex_code) else 'Unknown'}\n" \
-                    f"Emergency: {aircraft_info.get('emergency', 'none')}\n"
-
+                    f"Ground Speed: {aircraft.get('gs', 'N/A')} knots\n" \
+                    f"Transponder: {aircraft.get('type', 'N/A')}\n" \
+                    f"Military: {'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown'}\n" \
+                    f"Emergency: {aircraft.get('emergency', 'none')}\n"
+    
     if not your_email or not your_email_app_password or not your_smtp_server or not your_smtp_port:
         pass
     else:
@@ -529,14 +550,9 @@ def check_aircraft(aircraft):
         dist = haversine(your_lat, your_lon, lat, lon)
         direction = calculate_direction(your_lat, your_lon, lat, lon)
         current_time = time.time()
-        
-        print(f"Checking aircraft: Hex={hex_code}, Distance={dist:.2f}mi, "
-              f"Transponder Type={transponder_type}, Callsign={flight}, "
-              f"Military={military_flag}, Emergency={emergency_flag}.")
 
         # 1. Check if aircraft is within the defined range
         if dist > range_miles:
-            print(f"Skipping aircraft hex {hex_code}: Distance={dist:.2f}mi is outside of notification range.\n\n")
             return
 
         # 2. Check if the hex code matches the watch list
@@ -544,8 +560,9 @@ def check_aircraft(aircraft):
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
                 send_notification(aircraft, hex_code, dist, direction)
                 last_notified[hex_code] = current_time
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Hex code in watch list"))
             else:
-                print(f"Skipping aircraft hex {hex_code}: Last alert sent {int((current_time - last_notified[hex_code]) / 60)} minutes ago.\n\n")
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Hex code in watch list"))
             return
         
         # 3. Check if the callsign matches the watch list
@@ -554,8 +571,9 @@ def check_aircraft(aircraft):
                 if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
                     send_notification(aircraft, hex_code, dist, direction)
                     last_notified[hex_code] = current_time
+                    terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Callsign in watch list"))
                 else:
-                    print(f"Skipping aircraft hex {hex_code}: Last alert sent {int((current_time - last_notified[hex_code]) / 60)} minutes ago.\n\n")
+                    terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Callsign in watch list"))
                 return
 
         # 4. Check if the emergency flag is set
@@ -563,8 +581,9 @@ def check_aircraft(aircraft):
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
                 send_notification(aircraft, hex_code, dist, direction)
                 last_notified[hex_code] = current_time
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist=:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Emergency flag set"))
             else:
-                print(f"Skipping aircraft hex {hex_code}: Last alert sent {int((current_time - last_notified[hex_code]) / 60)} minutes ago.\n\n")
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist=:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Emergency flag set"))
             return
 
         # 5. Check if the callsign belongs to a commercial airline
@@ -644,7 +663,6 @@ def check_aircraft(aircraft):
                 'WJA',  # WestJet
                 'XSR'   # Executive AirShare (Charter)
             )):
-                print(f"Skipping aircraft hex {hex_code}: Commercial airline.\n\n")
                 return
 
         # 6. Check if the hex code or flag indicates military
@@ -652,8 +670,9 @@ def check_aircraft(aircraft):
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
                 send_notification(aircraft, hex_code, dist, direction)
                 last_notified[hex_code] = current_time
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Military aircraft"))
             else:
-                print(f"Skipping aircraft hex {hex_code}: Last alert sent {int((current_time - last_notified[hex_code]) / 60)} minutes ago.\n\n")
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Military aircraft"))
             return
         
         # 7. Check the transponder type
@@ -661,17 +680,18 @@ def check_aircraft(aircraft):
             if hex_code not in last_notified or (current_time - last_notified[hex_code]) > min_alert_period:
                 send_notification(aircraft, hex_code, dist, direction)
                 last_notified[hex_code] = current_time
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Matches desired transponder type"))
             else:
-                print(f"Skipping aircraft hex {hex_code}: Last alert sent {int((current_time - last_notified[hex_code]) / 60)} minutes ago.\n\n")
+                terminal_table.append((hex_code, aircraft.get('flight', 'N/A'), f"{dist:.2f}", direction, aircraft.get('gs', 'N/A'), aircraft.get('type', 'N/A'), 'Yes' if aircraft.get('military', False) or is_military_aircraft(hex_code) else 'Unknown', aircraft.get('emergency', 'none'), "Yes", "Matches desired transponder type"))
         else:
-            print(f"Skipping aircraft hex {hex_code}: Does not match required transponder type.\n\n")
+            pass
     else:
-        print(f"Checking aircraft: Hex={hex_code}\n Skipping aircraft hex {hex_code}: Missing lat/lon data.\n\n")
+        pass
 
-# Fetch data from your local ADSBExchange server aircraft.json 
+# Fetch data from your local feeder server aircraft.json 
 def fetch_aircraft_data():
     global aircraft_json_path
-    global home_dir_check
+    global aircrafts_json_path_expanded
     try:
         file_path = aircraft_json_path
         with open(file_path, 'r') as f:
@@ -679,14 +699,20 @@ def fetch_aircraft_data():
             for aircraft in aircraft_data.get('aircraft', []):
                 check_aircraft(aircraft)
 
-        # Check for aircrafts.json using the home_dir_check variable
-        with open(home_dir_check, 'r') as f:
+        # Check for aircrafts.json using the aircrafts_json_path_expanded variable
+        with open(aircrafts_json_path_expanded, 'r') as f:
             aircrafts_data = json.load(f)
-            # Process aircrafts_data as needed, if it will be used elsewhere
     except FileNotFoundError:
-        print(f"File not found: {file_path} or {aircrafts_file_path}")
+        print(f"File not found: {aircraft_json_path} or {aircrafts_json_path_expanded}")
     except json.JSONDecodeError:
         print("Error decoding JSON response")
+
+def display_alerts():
+    global terminal_table
+    headers = ["Hex Code", "Callsign", "Distance (mi)", "Direction", "Speed (kt)", "Transponder Type", "Military", "Emergency", "Alert Sent", "Comment"]
+    print(tabulate(terminal_table, headers=headers, tablefmt="grid"))
+    print(f"\n{aircrafts_status}")
+    terminal_table = []
 
 
 # Function to run the script based on user defined update rate
@@ -695,11 +721,12 @@ def run_script():
     active_end_time = datetime.now().replace(hour=active_end_hour, minute=active_end_minute).time()
     while True:
         if run_schedule(active_start_time, active_end_time, selected_days):
-            print("Executing aircraft tracking logic...\n")
             global update_rate
             start_time = time.time()
             aircrafts_age_check()
             fetch_aircraft_data()
+            os.system('clear' if os.name != 'nt' else 'cls')
+            display_alerts()
             elapsed_time = time.time() - start_time
             time.sleep(max(update_rate - elapsed_time, 0))
 

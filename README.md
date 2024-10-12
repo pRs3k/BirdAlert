@@ -1,5 +1,5 @@
 # BirdAlert
-BirdAlert is an aircraft reporting tool for ADS-B receivers that sends notifications whenever an aircraft of a certain type enters a certain radius of airspace. The alert includes the aircraft hex, callsign, type, owner, distance, direction, ground speed, transponder type, military flag and emergy flag information.
+BirdAlert is an aircraft reporting tool for ADS-B receivers that sends notifications whenever an aircraft of a certain type enters a certain radius of airspace. The alert includes the aircraft hex, callsign, type, owner, distance, direction, ground speed, transponder type, military flag and emergy flag information. It may also be used as terminal ui to monitor traffic on your recevier.
 
 ## Features
 - Supports notifications via email, email-to-sms (untested), Twilio (untested), Telegram, Signal (untested), IFTTT (untested), and Pushover (untested)
@@ -10,6 +10,7 @@ BirdAlert is an aircraft reporting tool for ADS-B receivers that sends notificat
 - Option to ignore commercial airlines (default is "True")
 - Includes a list of celebrity aircraft hexes to monitor by default
 - Monitors for Civil Air Patrol (CAP) aircraft callsigns by default
+- Prints a table in the terminal reporting which aircraft are currently being alerted
 
 ## Setup
 
@@ -38,17 +39,18 @@ If you need to stop BirdAlert or modify the configuration variables:<br>
 ## Future Enhancements
 - [ ] Add the option of using APIs from flight tracker websites (like airplanes.live)
 - [ ] Add error handling for network connectivity issues
+- [ ] Add error handling for the script filling up device storage
 - [ ] Switch to using the new Mictronics aircraft database that receives regular updates https://github.com/Mictronics/readsb-protobuf/blob/dev/webapp/src/db/aircrafts.json by parsing the Mictronics types database https://github.com/Mictronics/readsb-protobuf/blob/dev/webapp/src/db/types.json 
 - [ ] Use the Mictronics operator database to include more comprehensive filtering https://github.com/Mictronics/readsb-protobuf/blob/dev/webapp/src/db/operators.json
 - [x] ~~Allow for notifications using email-to-SMS~~
-- [ ] Figure out where the "interesting" aircraft database comes from on adsbx and incorporate it here
+- [ ] Figure out where the "interesting" aircraft database comes from and incorporate it here
 - [x] ~~Add the ability to schedule the script to run only at certain times of day~~
 - [x] ~~Make it easier to customize/select custom alert rules~~
 - [ ] Account for aircraft using TIS-B that may rapidly change their hex code (which begin with "~") leading to a flood of notifications
 - [x] ~~Add error handling for notification failures~~
 - [x] ~~Allow for hex code specific notifications~~
 - [x] ~~Allow for callsign specific notifications~~
-- [ ] Clean up terminal output to be more compact
+- [x] ~~Clean up terminal output to be more compact~~
 - [x] ~~Add more commercial airline callsigns to the ignore list~~
 - [ ] Investigate if data could also be taken from https://globe.adsbexchange.com/ as a separate option, ex. using a browser plugin
 - [ ] Incorporate category codes into alerts
@@ -57,7 +59,6 @@ If you need to stop BirdAlert or modify the configuration variables:<br>
 
 ## Comments
 - Email-to-SMS is increasingly more difficult due to email providers implementing spam restrictions/rate limiting
-- I'm not sure if the military and emergency flags are actually being set in the aircraft.json
-- Currently the default path for aicraft.json is `/run/readsb/aircraft.json` which contains the raw flight data. This data is gets refined into `/run/adsbexchange-feed/aircraft.json`, which is sent to ADSBx for feeding.
+- Currently the default path for aicraft.json is `/run/readsb/aircraft.json` which contains the raw flight data.
 - Some military aircraft set their hexes outside of the designated hex range for military use only. For these cases, a database of known military hexes is useful.
 - Alas, some military aircraft will not broadcast at all and can only be seen with the naked eye.

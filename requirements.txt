@@ -1,6 +1,7 @@
 
 # Required packages
 requests        # For downloading the updated Mictronics database
+tabulate        # For generating the table in the terminal output 
 
 # Optional packages (depending on the notification method used)
 twilio          # For Twilio notifications
