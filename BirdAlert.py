@@ -156,9 +156,9 @@ def is_script_running():
         print(f"Error checking script status: {e}")
         return False
 
-if is_script_running():
-    print("Another instance of the script is already running.")
-    sys.exit()
+# if is_script_running():
+#     print("Another instance of the script is already running.")
+#     sys.exit()
 
 # Variable to load in aircrafts.json data
 aircrafts_data = None
