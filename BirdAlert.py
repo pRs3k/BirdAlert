@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+os.environ['TERM'] = 'linux'
 
 import os
 import smtplib
