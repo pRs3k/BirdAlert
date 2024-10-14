@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-os.environ['TERM'] = 'linux'
 
 import os
 import smtplib
@@ -12,6 +11,8 @@ from datetime import datetime, timedelta
 from tabulate import tabulate
 import subprocess
 import sys
+
+os.environ['TERM'] = 'linux'
 
 #############################################################
 
@@ -251,21 +252,20 @@ def aircrafts_age_check():
         global aircrafts_status
         if is_new_aircrafts_json:
             aircrafts_status = (f"{aircrafts_json_path_expanded} not found. Downloading for the first time...\n")
+            download_file(url, aircrafts_json_path_expanded) # Download the latest aircrafts.json
+
+            # Load the updated aircrafts.json
+            try:
+                with open(aircrafts_json_path_expanded, 'r') as f:
+                    aircrafts_data = json.load(f)
+            except FileNotFoundError:
+                print(f"File not found: {aircrafts_json_path_expanded}")
+            except json.JSONDecodeError:
+                print("Error decoding JSON response")
         else:
-            aircrafts_status = ("More than 24 hours since last download of Micronics database. Downloading latest file...\n")
+            pass
+#            aircrafts_status = ("More than 24 hours since last download of Micronics database. Downloading latest file...\n") # TBD feature to download the new aircrafts.json. There is no need to keep redownloading the same file here.
         
-        # Download the latest aircrafts.json
-        download_file(url, aircrafts_json_path_expanded)
-
-        # Load the updated aircrafts.json
-        try:
-            with open(aircrafts_json_path_expanded, 'r') as f:
-                aircrafts_data = json.load(f)
-        except FileNotFoundError:
-            print(f"File not found: {aircrafts_json_path_expanded}")
-        except json.JSONDecodeError:
-            print("Error decoding JSON response")
-
         # Update the .time_check file to the current time
         os.utime(time_check_file, (current_time, current_time))
     else:
@@ -742,6 +742,7 @@ def display_alerts():
     headers = ["Hex Code", "Callsign", "Aircraft Type", "Distance (mi)", "Direction", "Speed (kt)", "Transponder Type", "Military", "Emergency", "Alert Sent", "Comment"]
     print(tabulate(terminal_table, headers=headers, tablefmt="grid"))
     print(f"\n{aircrafts_status}")
+    print(f"Fetching latest data...")
     terminal_table = []
 
 
