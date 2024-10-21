@@ -147,20 +147,19 @@ twilio_phone_number = ''
 
 #############################################################
 
+# Detect if 3 or more BirdAlert processes are already running (since cron uses 2)
 def is_script_running():
-    # Run pgrep command to find instances of the script
     try:
         result = subprocess.run(['pgrep', '-f',"BirdAlert.py"], capture_output=True, text=True)
-        # Get the number of lines returned
         pids = result.stdout.strip().split('\n')
-        return len(pids) >= 2  # Return True if 2 or more PIDs are found
+        return len(pids) >= 3
     except Exception as e:
         print(f"Error checking script status: {e}")
         return False
 
-# if is_script_running():
-#     print("Another instance of the script is already running.")
-#     sys.exit()
+if is_script_running():
+    print("Another instance of the script is already running.")
+    sys.exit()
 
 # Variable to load in aircrafts.json data
 aircrafts_data = None
