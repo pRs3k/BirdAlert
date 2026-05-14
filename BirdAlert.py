@@ -213,18 +213,18 @@ def run_schedule(active_start_time, active_end_time, selected_days):
 
 
 
-# Function to support downloading updated Mictronics aircraft database
-def download_file(url, path):
-    try:
-        file_response = requests.get(url)
-        if file_response.status_code == 200:
-            with open(path, 'wb') as f:
-                f.write(file_response.content)
-            print(f"{path} has been downloaded.\n")
-        else:
-            print(f"Failed to download the file. HTTP Status: {file_response.status_code}\n")
-    except Exception as e:
-        print(f"Error downloading file: {e}\n")
+# Function to support downloading updated Mictronics aircraft database (THIS IS NOW DISABLED AS A POTENTIAL SECURITY RISK)
+# def download_file(url, path):
+#    try:
+#        file_response = requests.get(url)
+#        if file_response.status_code == 200:
+#            with open(path, 'wb') as f:
+#                f.write(file_response.content)
+#            print(f"{path} has been downloaded.\n")
+#        else:
+#            print(f"Failed to download the file. HTTP Status: {file_response.status_code}\n")
+#    except Exception as e:
+#        print(f"Error downloading file: {e}\n")
 
 # Function to check if there is a newer version of the Mictronics aircraft database and then download it
 def aircrafts_age_check():
@@ -250,8 +250,8 @@ def aircrafts_age_check():
     if is_new_time_check or (current_time - last_check_time) > 86400:
         global aircrafts_status
         if is_new_aircrafts_json:
-            aircrafts_status = (f"{aircrafts_json_path_expanded} not found. Downloading for the first time...\n")
-            download_file(url, aircrafts_json_path_expanded) # Download the latest aircrafts.json
+            aircrafts_status = (f"{aircrafts_json_path_expanded} not found. Please go to https://raw.githubusercontent.com/Mictronics/readsb/refs/heads/master/webapp/src/db/aircrafts.json' and download the latest version if you trust the source.\n")
+#            download_file(url, aircrafts_json_path_expanded) # Download the latest aircrafts.json (THIS IS NOW DISABLED AS A POTENTIAL SECURITY RISK)
 
             # Load the updated aircrafts.json
             try:
